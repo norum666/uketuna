@@ -813,7 +813,7 @@ function processAudio() {
 
 async function startTuner() {
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioCtx.createAnalyser();
