@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ukulele Tuner — Free Online Tuner, No Fuss</title>
+<meta name="description" content="The simplest free online ukulele tuner. One button. Auto string detection. No ads, no signup, no clutter. Just tune your uke.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream:   #f5f0e8;
+    --paper:   #ede8dc;
+    --warm:    #d4c9b0;
+    --wood:    #8b6914;
+    --dark:    #2c1f0e;
+    --string:  #c49a2a;
+    --green:   #3d6b45;
+    --red:     #8b2e1e;
+    --needle:  #2c1f0e;
+    --shadow:  rgba(44,31,14,0.15);
+    --playfair: 'Playfair Display', serif;
+    --mono:    'DM Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--cream);
+    color: var(--dark);
+    font-family: var(--playfair);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(196,154,42,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(139,105,20,0.08) 0%, transparent 60%);
+  }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .title {
+    font-size: clamp(2rem, 6vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--dark);
+    line-height: 1;
+  }
+
+  .title em {
+    font-style: italic;
+    color: var(--wood);
+  }
+
+  .subtitle {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--wood);
+    margin-top: 0.5rem;
+    opacity: 0.7;
+  }
+
+  /* ── MAIN CARD ── */
+  .card {
+    background: var(--paper);
+    border-radius: 24px;
+    padding: 2.5rem 2rem 2rem;
+    width: 100%;
+    max-width: 380px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.8) inset,
+      0 8px 40px var(--shadow),
+      0 2px 8px rgba(44,31,14,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--string), var(--string), transparent);
+    opacity: 0.6;
+  }
+
+  /* ── GAUGE ── */
+  .gauge-wrap {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    margin-bottom: 1.5rem;
+  }
+
+  .gauge-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  /* ── STRING INDICATORS ── */
+  .strings {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .string-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: default;
+  }
+
+  .string-circle {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 2px solid var(--warm);
+    background: var(--cream);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .string-circle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.4), transparent 60%);
+    pointer-events: none;
+  }
+
+  .string-note {
+    font-family: var(--playfair);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--dark);
+    line-height: 1;
+  }
+
+  .string-num {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--wood);
+    opacity: 0.6;
+    letter-spacing: 0.05em;
+  }
+
+  .string-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--wood);
+    opacity: 0.5;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Active string states */
+  .string-circle.active-green {
+    border-color: var(--green);
+    background: rgba(61,107,69,0.08);
+    box-shadow: 0 0 0 3px rgba(61,107,69,0.15);
+  }
+  .string-circle.active-green .string-note { color: var(--green); }
+
+  .string-circle.active-sharp {
+    border-color: var(--red);
+    background: rgba(139,46,30,0.06);
+  }
+  .string-circle.active-sharp .string-note { color: var(--red); }
+
+  .string-circle.active-flat {
+    border-color: var(--wood);
+    background: rgba(139,105,20,0.06);
+  }
+  .string-circle.active-flat .string-note { color: var(--wood); }
+
+  /* ── CENTS DISPLAY ── */
+  .cents-display {
+    text-align: center;
+    margin-bottom: 1.25rem;
+    height: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cents-value {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--dark);
+    line-height: 1;
+    letter-spacing: -1px;
+    transition: color 0.2s;
+  }
+
+  .cents-value.in-tune { color: var(--green); }
+  .cents-value.sharp   { color: var(--red); }
+  .cents-value.flat    { color: var(--wood); }
+
+  .cents-label {
+    font-family: var(--playfair);
+    font-size: 26px;
+    font-weight: 700;
+    font-style: italic;
+    letter-spacing: 0;
+    color: var(--wood);
+    opacity: 0.5;
+    text-transform: none;
+    margin-top: 4px;
+    transition: color 0.2s, opacity 0.2s;
+  }
+
+  .cents-label.in-tune { color: var(--green); opacity: 1; }
+  .cents-label.sharp   { color: var(--red);   opacity: 1; }
+  .cents-label.flat    { color: var(--wood);  opacity: 1; }
+
+  /* ── STATUS TEXT ── */
+  .status {
+    font-family: var(--playfair);
+    font-size: 22px;
+    font-weight: 700;
+    font-style: italic;
+    letter-spacing: 0.01em;
+    text-align: center;
+    color: var(--wood);
+    opacity: 0.5;
+    min-height: 32px;
+    margin-bottom: 1.25rem;
+    transition: color 0.2s, opacity 0.2s;
+    line-height: 1.2;
+  }
+
+  .status.highlight {
+    opacity: 1;
+    color: var(--green);
+  }
+
+  .status.sharp-status {
+    opacity: 1;
+    color: var(--red);
+  }
+
+  .status.flat-status {
+    opacity: 1;
+    color: var(--wood);
+  }
+
+  /* ── BUTTON ── */
+  .tune-btn {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid var(--dark);
+    border-radius: 14px;
+    background: var(--dark);
+    color: var(--cream);
+    font-family: var(--playfair);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tune-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.06), transparent);
+  }
+
+  .tune-btn:hover {
+    background: var(--wood);
+    border-color: var(--wood);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(44,31,14,0.2);
+  }
+
+  .tune-btn:active { transform: translateY(0); }
+
+  .tune-btn.listening {
+    background: var(--green);
+    border-color: var(--green);
+    animation: pulse-btn 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-btn {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(61,107,69,0.3); }
+    50%       { box-shadow: 0 0 0 8px rgba(61,107,69,0); }
+  }
+
+  .tune-btn.error {
+    background: var(--red);
+    border-color: var(--red);
+  }
+
+  /* ── DOT IDLE ANIMATION ── */
+  @keyframes dot-idle {
+    0%   { transform: translate(0px, 0px); }
+    25%  { transform: translate(-3px, 1px); }
+    75%  { transform: translate(3px, 1px); }
+    100% { transform: translate(0px, 0px); }
+  }
+
+  #slideDot.dot-idle, #slideDotShine.dot-idle {
+    animation: dot-idle 3s ease-in-out infinite;
+  }
+
+  /* ── FAQ ── */
+  .faq {
+    max-width: 380px;
+    width: 100%;
+    margin-top: 2.5rem;
+  }
+
+  .faq h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--dark);
+    opacity: 0.7;
+  }
+
+  .faq-item {
+    padding: 0.875rem 0;
+    border-bottom: 1px solid var(--warm);
+  }
+  .faq-item:last-child { border-bottom: none; }
+
+  .faq-q {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 0.3rem;
+  }
+
+  .faq-a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--dark);
+    opacity: 0.6;
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 2rem;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--wood);
+    opacity: 0.4;
+    text-align: center;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 420px) {
+    .card { padding: 2rem 1.25rem 1.5rem; }
+    .string-circle { width: 46px; height: 46px; }
+    .string-note { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1 class="title">uke<em>tuner</em></h1>
+  <p class="subtitle">Standard GCEA · Auto-detect · Free</p>
+</div>
+
+<div class="card">
+
+  <!-- GAUGE -->
+  <div class="gauge-wrap">
+    <svg class="gauge-svg" viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+      <!-- Arc background -->
+      <defs>
+        <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#8b2e1e" stop-opacity="0.3"/>
+          <stop offset="35%"  stop-color="#8b6914" stop-opacity="0.25"/>
+          <stop offset="50%"  stop-color="#3d6b45" stop-opacity="0.35"/>
+          <stop offset="65%"  stop-color="#8b6914" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#8b2e1e" stop-opacity="0.3"/>
+        </linearGradient>
+        <filter id="needleShadow">
+          <feDropShadow dx="1" dy="1" stdDeviation="2" flood-opacity="0.2"/>
+        </filter>
+      </defs>
+
+      <!-- Background arc -->
+      <path d="M 30 160 A 130 130 0 0 1 290 160" fill="none" stroke="url(#arcGrad)" stroke-width="32" stroke-linecap="round"/>
+
+      <!-- Arc outline -->
+      <path d="M 30 160 A 130 130 0 0 1 290 160" fill="none" stroke="#d4c9b0" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+
+      <!-- Center zone (in-tune) -->
+      <path id="centerZone" d="M 148 160 A 130 130 0 0 1 172 160" fill="none" stroke="#3d6b45" stroke-width="32" stroke-linecap="butt" opacity="0.0"/>
+
+      <!-- Tick marks -->
+      <g stroke="#8b6914" stroke-width="1" opacity="0.4">
+        <!-- -50 -->
+        <line x1="30" y1="160" x2="42" y2="160" transform="rotate(-90, 160, 160)"/>
+        <!-- -25 -->
+        <line x1="30" y1="160" x2="38" y2="160" transform="rotate(-45, 160, 160)"/>
+        <!-- 0 center -->
+        <line x1="30" y1="160" x2="45" y2="160" transform="rotate(0, 160, 160)" stroke="#3d6b45" stroke-width="1.5" opacity="0.7"/>
+        <!-- +25 -->
+        <line x1="30" y1="160" x2="38" y2="160" transform="rotate(45, 160, 160)"/>
+        <!-- +50 -->
+        <line x1="30" y1="160" x2="42" y2="160" transform="rotate(90, 160, 160)"/>
+      </g>
+
+      <!-- Labels -->
+      <g font-family="'DM Mono', monospace" font-size="10" fill="#8b6914" opacity="0.5" text-anchor="middle">
+        <text x="32"  y="152">♭</text>
+        <text x="161" y="28">♦</text>
+        <text x="290" y="152">♯</text>
+      </g>
+
+      <!-- Sliding dot indicator — moves along the arc -->
+      <!-- Arc center: (160,160), radius: 130, arc from -90° (left) to +90° (right) via top -->
+      <!-- dot radius matches arc stroke-width/2 = 14 -->
+      <circle id="slideDot" cx="160" cy="30" r="16"
+              fill="#2c1f0e"
+              filter="url(#needleShadow)"
+              style="transition: cx 0.08s ease, cy 0.08s ease;"/>
+      <!-- Inner shine on dot -->
+      <circle id="slideDotShine" cx="156" cy="26" r="6"
+              fill="white" opacity="0.18"
+              style="transition: cx 0.08s ease, cy 0.08s ease; pointer-events:none;"/>
+      <!-- Center marker line -->
+      <line x1="160" y1="18" x2="160" y2="44"
+            stroke="var(--cream)" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+
+      <!-- Note display in arc -->
+      <text id="noteDisplay" x="160" y="145" font-family="'Playfair Display', serif"
+            font-size="22" font-weight="700" fill="#2c1f0e" text-anchor="middle" opacity="0.15">
+        —
+      </text>
+    </svg>
+  </div>
+
+  <!-- CENTS -->
+  <div class="cents-display">
+    <div class="cents-value" id="centsVal">— ¢</div>
+    <div class="cents-label" id="centsLabel">waiting for signal</div>
+  </div>
+
+  <!-- STRINGS -->
+  <div class="strings">
+    <div class="string-btn">
+      <div class="string-circle" id="str-G">
+        <span class="string-note">G</span>
+        <span class="string-num">4th</span>
+      </div>
+      <span class="string-label">392Hz</span>
+    </div>
+    <div class="string-btn">
+      <div class="string-circle" id="str-C">
+        <span class="string-note">C</span>
+        <span class="string-num">3rd</span>
+      </div>
+      <span class="string-label">262Hz</span>
+    </div>
+    <div class="string-btn">
+      <div class="string-circle" id="str-E">
+        <span class="string-note">E</span>
+        <span class="string-num">2nd</span>
+      </div>
+      <span class="string-label">330Hz</span>
+    </div>
+    <div class="string-btn">
+      <div class="string-circle" id="str-A">
+        <span class="string-note">A</span>
+        <span class="string-num">1st</span>
+      </div>
+      <span class="string-label">440Hz</span>
+    </div>
+  </div>
+
+  <!-- BUTTON -->
+  <button class="tune-btn" id="tuneBtn" onclick="toggleTuner()">
+    Start Tuning
+  </button>
+
+</div>
+
+<!-- FAQ -->
+<div class="faq">
+  <h2>How to use</h2>
+
+  <div class="faq-item">
+    <div class="faq-q">Standard ukulele tuning</div>
+    <div class="faq-a">Standard tuning is G–C–E–A (4th to 1st string). The tuner auto-detects which string you're playing — just pluck and watch the needle.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Needle in the center = in tune</div>
+    <div class="faq-a">When the needle points straight up and the display turns green, your string is in tune. Flat (♭) means loosen, sharp (♯) means tighten.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Tips for accurate reading</div>
+    <div class="faq-a">Quiet room, pluck cleanly, hold the note. Keep your device close to the soundhole. New strings go flat quickly — retune after each string.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Does it work on mobile?</div>
+    <div class="faq-a">Yes. Works in Chrome and Safari on iPhone, Android, and desktop. Allow microphone access when prompted — audio never leaves your device.</div>
+  </div>
+</div>
+
+<!-- ABOUT SECTION -->
+<div class="faq" style="margin-top:1.5rem">
+  <h2>About ukulele tuning</h2>
+
+  <div class="faq-item">
+    <div class="faq-q">Standard GCEA tuning explained</div>
+    <div class="faq-a">Standard ukulele tuning is G–C–E–A, read from the 4th string (closest to your chin) to the 1st string (closest to the floor). The notes correspond to G4, C4, E4, and A4 in scientific pitch notation. This tuning has been the universal standard for soprano, concert, and tenor ukuleles since the early 20th century and is assumed by virtually all chord charts, tabs, and songbooks. If you pick up a ukulele and someone says "play a C chord", they're assuming GCEA tuning.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">High G vs. low G — what's the difference?</div>
+    <div class="faq-a">Standard GCEA tuning uses a high G string — meaning the G string is tuned higher than the C string, which creates the characteristic re-entrant tuning sound of the ukulele. Low G tuning replaces the high G string with a wound string tuned an octave lower (G3 instead of G4), giving the instrument a wider range and a fuller, more guitar-like sound. Most beginners start with high G. Low G is popular among fingerstyle players and those who want more bass presence. This tuner supports both — it will detect whichever G string you're playing.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">How often should you tune a ukulele?</div>
+    <div class="faq-a">Tune your ukulele every time you pick it up. Ukulele strings — especially nylon strings — are sensitive to temperature and humidity changes, which cause them to expand or contract and go out of tune. New strings are particularly unstable and may need retuning several times during a single playing session until they stretch and settle. As a rule of thumb: if you haven't played for more than a day, retune before playing. If you're performing live, check your tuning before every set and between songs if possible.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">How does an online tuner work?</div>
+    <div class="faq-a">This tuner uses your device's microphone and the Web Audio API built into modern browsers to capture sound in real time. An autocorrelation algorithm analyses the audio waveform to detect the fundamental frequency (pitch) of the note you're playing. It then compares that frequency to the target frequency of each GCEA string and calculates the offset in cents — hundredths of a semitone. The entire process runs locally in your browser: no audio data is ever sent to a server. One cent equals 1/100th of a semitone. An offset of ±5 cents is generally considered in tune for casual playing; professional musicians often aim for ±2 cents.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Why does my ukulele go out of tune so quickly?</div>
+    <div class="faq-a">Several factors cause ukuleles to lose tuning faster than other instruments. Nylon strings (used on most soprano and concert ukuleles) are especially elastic and take time to stretch and stabilize — new strings can go noticeably flat within minutes of playing. Temperature changes cause the neck wood to expand and contract, shifting string tension. High humidity softens the wood and affects the neck angle. Cheap tuning pegs with worn friction also slip under string tension. If your ukulele constantly goes flat, try stretching new strings by gently pulling them away from the fretboard a few times after tuning. This speeds up the break-in period significantly.</div>
+  </div>
+</div>
+
+<footer>uketuner.app · free · no ads · no signup · 2026</footer>
+
+<script>
+// ═══════════════════════════════
+// UKULELE TUNER — Web Audio API
+// Standard GCEA tuning
+// ═══════════════════════════════
+
+const STRINGS = {
+  G: { freq: 196.00, min: 160, max: 240 },  // G3 (high G is G4=392, low G is G3=196)
+  C: { freq: 261.63, min: 241, max: 310 },  // C4
+  E: { freq: 329.63, min: 311, max: 380 },  // E4
+  A: { freq: 440.00, min: 381, max: 550 },  // A4
+};
+
+// Also detect high G (G4 = 392Hz)
+const HIGH_G = { freq: 392.00, min: 360, max: 430 };
+
+let audioCtx = null;
+let analyser = null;
+let source   = null;
+let stream   = null;
+let running  = false;
+let rafId    = null;
+
+const slideDot   = document.getElementById('slideDot');
+const dotShine   = document.getElementById('slideDotShine');
+const noteDisplay = document.getElementById('noteDisplay');
+const centsVal    = document.getElementById('centsVal');
+const centsLabel  = document.getElementById('centsLabel');
+const statusEl = document.getElementById('status') || { textContent: '', className: '' };
+const tuneBtn     = document.getElementById('tuneBtn');
+
+// Arc params: center (160,160), radius 130, spans -90° to +90° (top = 0°)
+const ARC_CX = 160, ARC_CY = 160, ARC_R = 130;
+
+function centsToArcPos(cents) {
+  // cents: -50 = full left, 0 = top, +50 = full right
+  const clamped = Math.max(-50, Math.min(50, cents));
+  const angleDeg = (clamped / 50) * 90; // -90° to +90°
+  const angleRad = (angleDeg - 90) * Math.PI / 180; // offset so 0° = top
+  return {
+    x: ARC_CX + ARC_R * Math.cos(angleRad),
+    y: ARC_CY + ARC_R * Math.sin(angleRad),
+  };
+}
+
+function setDot(cents) {
+  const pos = centsToArcPos(cents);
+  slideDot.setAttribute('cx', pos.x);
+  slideDot.setAttribute('cy', pos.y);
+  // Shine offset (upper-left of dot)
+  dotShine.setAttribute('cx', pos.x - 4);
+  dotShine.setAttribute('cy', pos.y - 4);
+  slideDot.classList.remove('dot-idle');
+  dotShine.classList.remove('dot-idle');
+}
+
+function resetDot() {
+  const pos = centsToArcPos(0);
+  slideDot.setAttribute('cx', pos.x);
+  slideDot.setAttribute('cy', pos.y);
+  dotShine.setAttribute('cx', pos.x - 4);
+  dotShine.setAttribute('cy', pos.y - 4);
+  slideDot.classList.add('dot-idle');
+  dotShine.classList.add('dot-idle');
+}
+
+// Frequency → cents offset from target
+function freqToCents(freq, target) {
+  return 1200 * Math.log2(freq / target);
+}
+
+// Find closest string
+function detectString(freq) {
+  let best = null;
+  let bestDist = Infinity;
+
+  for (const [name, s] of Object.entries(STRINGS)) {
+    if (freq >= s.min && freq <= s.max) {
+      const dist = Math.abs(freq - s.freq);
+      if (dist < bestDist) { bestDist = dist; best = { name, ...s }; }
+    }
+  }
+
+  // Check high G separately
+  if (freq >= HIGH_G.min && freq <= HIGH_G.max) {
+    const dist = Math.abs(freq - HIGH_G.freq);
+    if (dist < bestDist) { bestDist = dist; best = { name: 'G', freq: HIGH_G.freq, min: HIGH_G.min, max: HIGH_G.max }; }
+  }
+
+  return best;
+}
+
+// YIN-inspired autocorrelation pitch detection
+function detectPitch(buf, sampleRate) {
+  const SIZE = buf.length;
+  const MAX_SAMPLES = Math.floor(SIZE / 2);
+  const corr = new Float32Array(MAX_SAMPLES);
+  let rms = 0;
+
+  for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / SIZE);
+  if (rms < 0.03) return -1; // silence — raised threshold
+
+  // Autocorrelation
+  for (let lag = 0; lag < MAX_SAMPLES; lag++) {
+    let sum = 0;
+    for (let i = 0; i < MAX_SAMPLES; i++) {
+      sum += buf[i] * buf[i + lag];
+    }
+    corr[lag] = sum;
+  }
+
+  // Find first valley then peak (ignore lag=0)
+  let d = 0;
+  while (d < MAX_SAMPLES && corr[d] > corr[d + 1]) d++;
+
+  let maxVal = -Infinity, maxPos = -1;
+  for (let i = d; i < MAX_SAMPLES; i++) {
+    if (corr[i] > maxVal) { maxVal = corr[i]; maxPos = i; }
+  }
+
+  if (maxPos === -1 || maxPos < 2) return -1;
+
+  // Confidence check — reject weak correlations (harmonics, noise)
+  if (corr[maxPos] < corr[0] * 0.45) return -1;
+
+  // Parabolic interpolation for sub-sample accuracy
+  const y0 = corr[maxPos - 1];
+  const y1 = corr[maxPos];
+  const y2 = corr[maxPos + 1];
+  const denom = 2 * (2 * y1 - y2 - y0);
+  const refined = denom === 0 ? maxPos : maxPos - (y2 - y0) / denom;
+
+  return sampleRate / refined;
+}
+
+// Update dot position (-50 = flat, 0 = center, +50 = sharp)
+
+// Update string circles
+function updateStrings(active, state) {
+  ['G', 'C', 'E', 'A'].forEach(s => {
+    const el = document.getElementById(`str-${s}`);
+    el.className = 'string-circle';
+    if (s === active) el.classList.add(`active-${state}`);
+  });
+}
+
+// Smooth cents with rolling average
+let centsHistory = [];
+function smoothCents(c) {
+  centsHistory.push(c);
+  if (centsHistory.length > 12) centsHistory.shift();
+  return centsHistory.reduce((a, b) => a + b, 0) / centsHistory.length;
+}
+
+let lastDetected = null;
+let lastFreq = -1;
+let silenceTimer = null;
+
+function processAudio() {
+  if (!running) return;
+
+  const buf = new Float32Array(analyser.fftSize);
+  analyser.getFloatTimeDomainData(buf);
+
+  const freq = detectPitch(buf, audioCtx.sampleRate);
+
+  if (freq > 0 && freq > 150 && freq < 600) {
+
+    // Sticky detection — reject if freq jumps too far from last reading
+    if (lastFreq > 0 && Math.abs(freq - lastFreq) > 35) {
+      lastFreq = freq;
+      rafId = requestAnimationFrame(processAudio);
+      return;
+    }
+    lastFreq = freq;
+
+    clearTimeout(silenceTimer);
+    silenceTimer = null;
+
+    const match = detectString(freq);
+    if (match) {
+      const rawCents = freqToCents(freq, match.freq);
+      const cents    = smoothCents(rawCents);
+      const absCents = Math.abs(cents);
+
+      // Update dot color
+      const dotColor = absCents <= 5 ? '#3d6b45' : cents > 0 ? '#8b2e1e' : '#8b6914';
+      slideDot.setAttribute('fill', dotColor);
+
+      // Update dot
+      slideDot.classList.remove('dot-idle');
+      setDot(cents);
+
+      // Update note display
+      noteDisplay.textContent = match.name;
+      noteDisplay.style.opacity = '0.8';
+
+      // Determine state
+      let state, label, valClass, statusClass;
+      if (absCents <= 5) {
+        state = 'green'; label = 'in tune ✓'; valClass = 'in-tune'; statusClass = 'status highlight';
+      } else if (cents > 0) {
+        state = 'sharp'; label = 'tune down ↓'; valClass = 'sharp'; statusClass = 'status sharp-status';
+      } else {
+        state = 'flat'; label = 'tune up ↑'; valClass = 'flat'; statusClass = 'status flat-status';
+      }
+
+      // Update UI
+      updateStrings(match.name, state);
+
+      centsVal.textContent = (cents >= 0 ? '+' : '') + Math.round(cents) + ' ¢';
+      centsVal.className = `cents-value ${valClass}`;
+      centsLabel.textContent = absCents <= 5 ? 'in tune ✓' : cents > 0 ? 'tune down ↓' : 'tune up ↑';
+      centsLabel.className = `cents-label ${valClass}`;
+
+      statusEl.textContent = absCents <= 5 ? 'in tune ✓' : cents > 0 ? 'tune down ↓' : 'tune up ↑';
+      statusEl.className = statusClass;
+
+      lastDetected = match.name;
+    }
+  } else {
+    // Silence / out of range
+    if (!silenceTimer) {
+      silenceTimer = setTimeout(() => {
+        lastFreq = -1;
+        centsHistory = [];
+        updateStrings(null, '');
+        noteDisplay.textContent = '—';
+        noteDisplay.style.opacity = '0.15';
+        centsVal.textContent = '— ¢';
+        centsVal.className = 'cents-value';
+        centsLabel.textContent = 'waiting for signal';
+        centsLabel.className = 'cents-label';
+        slideDot.setAttribute('fill', '#2c1f0e');
+        statusEl.textContent = 'waiting for signal';
+        statusEl.className = 'status';
+        resetDot();
+      }, 1200);
+    }
+  }
+
+  rafId = requestAnimationFrame(processAudio);
+}
+
+async function startTuner() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.8;
+
+    source = audioCtx.createMediaStreamSource(stream);
+    source.connect(analyser);
+
+    running = true;
+    tuneBtn.textContent = 'Stop Tuning';
+    tuneBtn.className = 'tune-btn listening';
+    statusEl.textContent = 'waiting for signal';
+    statusEl.className = 'status';
+    resetDot();
+
+    processAudio();
+  } catch (err) {
+    tuneBtn.textContent = 'Microphone Denied';
+    tuneBtn.className = 'tune-btn error';
+    statusEl.textContent = 'allow microphone access to use the tuner';
+    setTimeout(() => {
+      tuneBtn.textContent = 'Try Again';
+      tuneBtn.className = 'tune-btn';
+    }, 3000);
+  }
+}
+
+function stopTuner() {
+  running = false;
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  if (source) { source.disconnect(); source = null; }
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+
+  centsHistory = [];
+  lastFreq = -1;
+  updateStrings(null, '');
+  noteDisplay.textContent = '—';
+  noteDisplay.style.opacity = '0.15';
+  centsVal.textContent = '— ¢';
+  centsVal.className = 'cents-value';
+  centsLabel.textContent = 'waiting for signal';
+  centsLabel.className = 'cents-label';
+  statusEl.textContent = 'waiting for signal';
+  statusEl.className = 'status';
+  resetDot();
+
+  tuneBtn.textContent = 'Start Tuning';
+  tuneBtn.className = 'tune-btn';
+}
+
+function toggleTuner() {
+  if (running) stopTuner();
+  else startTuner();
+}
+</script>
+</body>
+</html>
