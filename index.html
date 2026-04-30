@@ -671,7 +671,7 @@ function detectPitch(buf, sampleRate) {
 
   for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / SIZE);
-  if (rms < 0.3) return -1; // silence — raised threshold
+  if (rms < 0.1) return -1; // silence — raised threshold
 
   // Autocorrelation
   for (let lag = 0; lag < MAX_SAMPLES; lag++) {
