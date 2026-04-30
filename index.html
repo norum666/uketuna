@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ukulele Tuner — Free Online Tuner, No Fuss</title>
-<meta name="description" content="The simplest free online ukulele tuner. One button. Auto string detection. No ads, no signup, no clutter. Just tune your uke.">
+<meta name="description" content="The simplest free online ukulele tuner. One button. Auto string detection. No clutter. Just tune your uke.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <!-- dodan jos jedan komentar radi nove verzije -->
@@ -671,7 +671,7 @@ function detectPitch(buf, sampleRate) {
 
   for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / SIZE);
-  if (rms < 0.03) return -1; // silence — raised threshold
+  if (rms < 0.3) return -1; // silence — raised threshold
 
   // Autocorrelation
   for (let lag = 0; lag < MAX_SAMPLES; lag++) {
